@@ -38,6 +38,45 @@
       .scene {
         width: min(440px, 94vw);
         text-align: center;
+        position: relative;
+        z-index: 2; /* keep content above floating hearts */
+      }
+
+      /* ---- Floating hearts background ---- */
+      .hearts {
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .heart {
+        position: absolute;
+        left: var(--x, 50vw);
+        top: 110vh; /* start below the screen */
+        font-size: var(--size, 18px);
+        opacity: var(--opacity, 0.35);
+        color: rgba(214, 40, 40, 0.55);
+        text-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+        transform: translateX(0) translateY(0) rotate(var(--rot, 0deg));
+        animation: floatUp var(--dur, 9s) linear forwards;
+        will-change: transform, opacity;
+        user-select: none;
+      }
+
+      @keyframes floatUp {
+        0% {
+          transform: translateX(0) translateY(0) rotate(var(--rot, 0deg));
+          opacity: 0;
+        }
+        10% {
+          opacity: var(--opacity, 0.35);
+        }
+        100% {
+          transform: translateX(var(--drift, 0px)) translateY(-130vh) rotate(calc(var(--rot, 0deg) + 18deg));
+          opacity: 0;
+        }
       }
 
       /* ---- Envelope ---- */
@@ -221,6 +260,9 @@
         .open-btn {
           transition: none !important;
         }
+        .hearts {
+          display: none;
+        }
       }
 
       @media (max-width: 380px) {
@@ -243,16 +285,17 @@
     </style>
   </head>
   <body>
+    <div class="hearts" id="hearts" aria-hidden="true"></div>
     <main class="scene" aria-label="Valentine's Day card">
       <div class="envelope" id="envelope">
         <div class="flap" aria-hidden="true"></div>
         <div class="pocket" aria-hidden="true"></div>
 
         <article class="card" aria-live="polite">
-          <h2>Happy Birthday, Chad!</h2>
+          <h2>My Pookie Bear,</h2>
           <div class="body">
             <p>
-              My Pookie Bear, even though it’s only been a month and we’re not
+              Even though it’s only been a month and we’re not
               officially in a relationship yet, the connection we share feels
               really genuine to me. I deeply appreciate you—like the way you
               talk to me, the way you listen, and how genuine your intentions
@@ -290,6 +333,53 @@
         envelope.classList.add("is-open");
         openBtn.setAttribute("aria-expanded", "true");
       });
+
+      // Floating hearts background (auto-disables for reduced motion).
+      const hearts = document.getElementById("hearts");
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      function spawnHeart() {
+        if (!hearts) return;
+
+        const el = document.createElement("span");
+        el.className = "heart";
+        el.textContent = "♥";
+
+        const size = rand(12, 26);
+        el.style.setProperty("--size", `${size}px`);
+        el.style.setProperty("--x", `${rand(0, 100)}vw`);
+        el.style.setProperty("--dur", `${rand(7, 13)}s`);
+        el.style.setProperty("--drift", `${rand(-24, 24)}px`);
+        el.style.setProperty("--rot", `${rand(-12, 12)}deg`);
+        el.style.setProperty("--opacity", String(rand(18, 55) / 100));
+
+        hearts.appendChild(el);
+
+        el.addEventListener(
+          "animationend",
+          () => {
+            el.remove();
+          },
+          { once: true },
+        );
+
+        // Keep the DOM lightweight (mobile friendly)
+        const maxHearts = 28;
+        while (hearts.children.length > maxHearts) {
+          hearts.firstElementChild?.remove();
+        }
+      }
+
+      function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
+      if (!reduceMotion) {
+        // small burst at start
+        for (let i = 0; i < 10; i++) setTimeout(spawnHeart, i * 220);
+        // then a steady stream
+        setInterval(spawnHeart, 520);
+      }
     </script>
   </body>
 </html>
