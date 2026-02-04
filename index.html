@@ -42,6 +42,22 @@
         z-index: 2; /* keep content above floating hearts */
       }
 
+      .music-btn {
+        margin-top: 14px;
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-weight: 650;
+        background: rgba(255, 255, 255, 0.92);
+        color: #8b0d18;
+        cursor: pointer;
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.12);
+      }
+
+      .music-btn[aria-pressed="true"] {
+        background: rgba(255, 255, 255, 0.75);
+      }
+
       /* ---- Floating hearts background ---- */
       .hearts {
         position: fixed;
@@ -294,6 +310,17 @@
   <body>
     <div class="hearts" id="hearts" aria-hidden="true"></div>
     <main class="scene" aria-label="Valentine's Day card">
+      <!--
+        Music note:
+        For copyright reasons, this project does NOT include the song file.
+        To enable music, put an MP3 named:
+          youll-be-in-my-heart-niki.mp3
+        in the SAME folder as this index.html file.
+      -->
+      <audio id="bgMusic" preload="auto" loop>
+        <source src="youll-be-in-my-heart-niki.mp3" type="audio/mpeg" />
+      </audio>
+
       <div class="envelope" id="envelope">
         <div class="flap" aria-hidden="true"></div>
         <div class="pocket" aria-hidden="true"></div>
@@ -333,6 +360,9 @@
         </button>
       </div>
 
+      <button class="music-btn" id="musicBtn" type="button" aria-pressed="false">
+        Play music ♪
+      </button>
     </main>
 
     <script>
@@ -340,11 +370,16 @@
       // Clicking again keeps it open (we simply ignore extra clicks).
       const envelope = document.getElementById("envelope");
       const openBtn = document.getElementById("openBtn");
+      const bgMusic = document.getElementById("bgMusic");
+      const musicBtn = document.getElementById("musicBtn");
 
       openBtn.addEventListener("click", () => {
         if (envelope.classList.contains("is-open")) return;
         envelope.classList.add("is-open");
         openBtn.setAttribute("aria-expanded", "true");
+
+        // Try to start music on open (user gesture required by most browsers).
+        playMusic();
       });
 
       // Floating hearts background (auto-disables for reduced motion).
@@ -393,6 +428,29 @@
         // then a steady stream
         setInterval(spawnHeart, 520);
       }
+
+      // --- Music controls ---
+      async function playMusic() {
+        if (!bgMusic) return;
+        try {
+          await bgMusic.play();
+          if (musicBtn) musicBtn.setAttribute("aria-pressed", "true");
+        } catch {
+          // Autoplay can fail (missing file or browser policy). User can tap Play.
+        }
+      }
+
+      function pauseMusic() {
+        if (!bgMusic) return;
+        bgMusic.pause();
+        if (musicBtn) musicBtn.setAttribute("aria-pressed", "false");
+      }
+
+      musicBtn?.addEventListener("click", async () => {
+        if (!bgMusic) return;
+        if (bgMusic.paused) await playMusic();
+        else pauseMusic();
+      });
     </script>
   </body>
 </html>
