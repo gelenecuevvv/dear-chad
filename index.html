@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dear Chad,</title>
+    <style>
+      /*
+        Simple Valentine's Day page (no libraries).
+        - Centered envelope
+        - Button opens the flap
+        - Card slides out
+      */
+
+      :root {
+        --bg: #f7d6e6; /* soft pink */
+        --envelope: #d62828; /* red */
+        --envelope-dark: #b91c1c; /* darker red for depth */
+        --card: #fffaf2; /* warm white/cream */
+        --text: #2b2b2b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100svh;
+        display: grid;
+        place-items: center;
+        padding: 28px 14px;
+        background: radial-gradient(circle at top, #ffe7f1 0%, var(--bg) 60%, #f3c6dc 100%);
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+        color: var(--text);
+      }
+
+      .scene {
+        width: min(440px, 94vw);
+        text-align: center;
+      }
+
+      /* ---- Envelope ---- */
+      .envelope {
+        position: relative;
+        width: 100%;
+        max-width: 360px;
+        height: auto;
+        aspect-ratio: 320 / 210;
+        margin: 0 auto;
+        border-radius: 14px;
+        background: linear-gradient(180deg, var(--envelope) 0%, var(--envelope-dark) 100%);
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+        overflow: visible;
+
+        /* gives the flap a nicer 3D feel when it rotates */
+        perspective: 900px;
+      }
+
+      /* front “X” details (optional, just to add envelope vibes) */
+      .envelope::before,
+      .envelope::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 14px;
+        pointer-events: none;
+        opacity: 0.22;
+      }
+      .envelope::before {
+        background:
+          linear-gradient(135deg, transparent 48%, rgba(255, 255, 255, 0.9) 50%, transparent 52%),
+          linear-gradient(45deg, transparent 48%, rgba(255, 255, 255, 0.9) 50%, transparent 52%);
+      }
+      .envelope::after {
+        background: radial-gradient(circle at 50% 60%, rgba(255, 255, 255, 0.25), transparent 55%);
+      }
+
+      /* The flap is a triangle made with clip-path */
+      .flap {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 56%;
+        background: #e63946;
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+        transform-origin: top center;
+        transform: rotateX(0deg);
+        transition: transform 700ms cubic-bezier(0.2, 0.9, 0.2, 1);
+        z-index: 4; /* closed: flap sits above the card */
+        border-top-left-radius: 14px;
+        border-top-right-radius: 14px;
+      }
+
+      /* A tiny highlight on the flap */
+      .flap::after {
+        content: "";
+        position: absolute;
+        inset: 8px 10px auto 10px;
+        height: 26px;
+        background: rgba(255, 255, 255, 0.18);
+        filter: blur(0.5px);
+        clip-path: polygon(0 0, 100% 0, 50% 100%);
+      }
+
+      /* Pocket/lip to make the card feel like it sits inside */
+      .pocket {
+        position: absolute;
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+        height: 58%;
+        background: rgba(0, 0, 0, 0.07);
+        border-radius: 12px;
+        z-index: 2;
+        overflow: hidden;
+      }
+
+      /* ---- Card ---- */
+      .card {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 18px;
+        height: clamp(210px, 48vh, 320px);
+        background: var(--card);
+        border-radius: 14px;
+        box-shadow: 0 14px 24px rgba(0, 0, 0, 0.18);
+        padding: 14px 14px 12px;
+        text-align: left;
+        z-index: 3;
+
+        /* starts mostly hidden inside the envelope */
+        --card-hidden: clamp(56px, 14vw, 84px);
+        --card-lift: clamp(110px, 28vw, 155px);
+        transform: translateY(var(--card-hidden));
+        opacity: 0;
+        pointer-events: none;
+        transition:
+          transform 900ms cubic-bezier(0.2, 0.9, 0.2, 1),
+          opacity 600ms ease;
+      }
+
+      .card h2 {
+        margin: 2px 0 8px;
+        font-size: 18px;
+        letter-spacing: 0.2px;
+      }
+
+      .card .body {
+        height: calc(100% - 34px); /* header + spacing */
+        overflow: auto;
+        padding-right: 6px; /* room for scrollbar */
+        line-height: 1.35;
+        font-size: 14px;
+      }
+
+      /* nicer scrollbar in supporting browsers */
+      .card .body::-webkit-scrollbar {
+        width: 10px;
+      }
+      .card .body::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.18);
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.7);
+      }
+
+      /* ---- Button ---- */
+      .open-btn {
+        position: absolute;
+        left: 50%;
+        bottom: 18px;
+        transform: translateX(-50%);
+        z-index: 5;
+
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 14px;
+        font-weight: 650;
+        background: rgba(255, 255, 255, 0.92);
+        color: #8b0d18;
+        cursor: pointer;
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+        transition: transform 160ms ease, opacity 300ms ease;
+      }
+
+      .open-btn:active {
+        transform: translateX(-50%) scale(0.98);
+      }
+
+      /* ---- Open state ---- */
+      .envelope.is-open .flap {
+        transform: rotateX(160deg);
+        z-index: 1; /* open: flap goes behind the card */
+      }
+
+      .envelope.is-open .card {
+        z-index: 6;
+        transform: translateY(calc(-1 * var(--card-lift)));
+        opacity: 1;
+        pointer-events: auto; /* allow scrolling/selection once visible */
+        transition-delay: 120ms;
+      }
+
+      .envelope.is-open .open-btn {
+        opacity: 0.35;
+        pointer-events: none; /* clicking again does nothing; no need to close */
+      }
+
+      /* Small helper text (optional) */
+      .hint {
+        margin-top: 16px;
+        font-size: 13px;
+        opacity: 0.75;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .flap,
+        .card,
+        .open-btn {
+          transition: none !important;
+        }
+      }
+
+      @media (max-width: 380px) {
+        .envelope {
+          border-radius: 12px;
+        }
+        .card {
+          left: 14px;
+          right: 14px;
+          bottom: 14px;
+          padding: 12px;
+        }
+        .card h2 {
+          font-size: 16px;
+        }
+        .card .body {
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="scene" aria-label="Valentine's Day card">
+      <div class="envelope" id="envelope">
+        <div class="flap" aria-hidden="true"></div>
+        <div class="pocket" aria-hidden="true"></div>
+
+        <article class="card" aria-live="polite">
+          <h2>Happy Valentine’s Day ❤️</h2>
+          <div class="body">
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non
+              risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing
+              nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas
+              ligula massa, varius a, semper congue, euismod non, mi. Proin
+              porttitor, orci nec nonummy molestie, enim est eleifend mi, non
+              fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa,
+              scelerisque vitae, consequat in, pretium a, enim. Pellentesque
+              congue. Ut in risus volutpat libero pharetra tempor. Cras
+              vestibulum bibendum augue. Praesent egestas leo in pede. Praesent
+              blandit odio eu enim. Pellentesque sed dui ut augue blandit
+              sodales. Vestibulum ante ipsum primis in faucibus orci luctus et
+              ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed
+              pede pellentesque fermentum. Maecenas adipiscing ante non diam
+              sodales hendrerit.
+            </p>
+            <p>
+              Ut velit mauris, egestas sed, gravida nec, ornare ut, mi. Aenean
+              ut orci vel massa suscipit pulvinar. Nulla sollicitudin. Fusce
+              varius, ligula non tempus aliquam, nunc turpis ullamcorper nibh,
+              in tempus sapien eros vitae ligula. Pellentesque rhoncus nunc et
+              augue. Integer id felis. Curabitur aliquet pellentesque diam.
+              Integer quis metus vitae elit lobortis egestas. Lorem ipsum dolor
+              sit amet, consectetuer adipiscing elit. Morbi vel erat non mauris
+              convallis vehicula. Nulla et sapien. Integer tortor tellus,
+              aliquam faucibus, convallis id, congue eu, quam. Mauris
+              ullamcorper felis vitae erat. Proin feugiat, augue non elementum
+              posuere, metus purus iaculis lectus, et tristique ligula justo
+              vitae magna.
+            </p>
+          </div>
+        </article>
+
+        <button class="open-btn" id="openBtn" type="button" aria-expanded="false">
+          Open me 💌
+        </button>
+      </div>
+
+      <p class="hint">Tip: Just open this file in your browser.</p>
+    </main>
+
+    <script>
+      // Beginner-friendly: a single click opens the envelope.
+      // Clicking again keeps it open (we simply ignore extra clicks).
+      const envelope = document.getElementById("envelope");
+      const openBtn = document.getElementById("openBtn");
+
+      openBtn.addEventListener("click", () => {
+        if (envelope.classList.contains("is-open")) return;
+        envelope.classList.add("is-open");
+        openBtn.setAttribute("aria-expanded", "true");
+      });
+    </script>
+  </body>
+</html>
